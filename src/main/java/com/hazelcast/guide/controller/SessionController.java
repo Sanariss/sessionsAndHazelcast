@@ -1,6 +1,8 @@
 package com.hazelcast.guide.controller;
 
+import com.hazelcast.core.HazelcastInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.session.Session;
 import org.springframework.session.hazelcast.Hazelcast4IndexedSessionRepository;
@@ -26,6 +28,10 @@ public class SessionController {
     @Autowired
     Hazelcast4IndexedSessionRepository sessionRepository;
 
+    @Qualifier("custom-hazelcast")
+    @Autowired
+    HazelcastInstance hazelcastInstance;
+
     /**
      * Creates a session for the request if there is no session of the request.
      *
@@ -39,6 +45,7 @@ public class SessionController {
         if (session == null) {
             session = request.getSession();
             session.setAttribute(principalIndexName, principal);
+            session.setAttribute("foo", "bar");
             return "Session created: " + session.getId();
         } else {
             return "Session already exists: " + session.getId();
@@ -58,6 +65,7 @@ public class SessionController {
         }
         String principal = (String) session.getAttribute(principalIndexName);
         Map<String, ? extends Session> sessions = sessionRepository.findByPrincipalName(principal);
+
         return toHtmlTable(sessions.entrySet().stream().collect(Collectors.toMap(
                 e -> e.getKey().substring(0, 8),
                 e -> "Principal: " + session.getAttribute(principalIndexName))
@@ -80,6 +88,7 @@ public class SessionController {
         attributes.put("principal", session.getAttribute(principalIndexName));
         attributes.put("created", formatter.format(new Date(session.getCreationTime())));
         attributes.put("last accessed", formatter.format(new Date(session.getLastAccessedTime())));
+        attributes.put("some Attribute", session.getAttribute("foo"));
         return toHtmlTable(attributes);
     }
 
